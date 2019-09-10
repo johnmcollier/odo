@@ -18,7 +18,8 @@ import (
 	"github.com/redhat-developer/odo-fork/pkg/log"
 	"github.com/redhat-developer/odo-fork/pkg/project"
 
-	odoutil "github.com/redhat-developer/odo-fork/pkg/kdo/util"
+	kdoutil "github.com/redhat-developer/odo-fork/pkg/kdo/util"
+	util "github.com/redhat-developer/odo-fork/pkg/util"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -186,7 +187,7 @@ func (po *PushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Writer) e
 	// // Apply config
 	// err = component.ApplyConfig(po.Context.Client, *po.localConfig, stdout, isCmpExists)
 	// if err != nil {
-	// 	odoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
+	// 	kdoutil.LogErrorAndExit(err, "Failed to update config to component deployed")
 	// }
 
 	return nil
@@ -206,8 +207,8 @@ func (po *PushOptions) Run() (err error) {
 		return nil
 	}
 
+	//
 	// TODO-KDO: Implement push once the persistent volume setup is complete
-	// log.Infof("\nPushing to component %s of type %s", cmpName, po.sourceType)
 
 	// // Get SourceLocation here...
 	// po.sourcePath, err = po.localConfig.GetOSSourcePath()
@@ -215,38 +216,39 @@ func (po *PushOptions) Run() (err error) {
 	// 	return errors.Wrap(err, "unable to retrieve OS source path to source location")
 	// }
 
-	// cmpName := po.localConfig.GetName()
-	// appName := po.localConfig.GetApplication()
+	cmpName := po.localConfig.GetName()
+	appName := po.localConfig.GetApplication()
+	log.Infof("\nPushing to component %s of type %s", cmpName, po.sourceType)
 
-	// switch po.sourceType {
-	// case config.LOCAL:
-	// 	glog.V(4).Infof("Copying directory %s to pod", po.sourcePath)
-	// 	err = component.PushLocal(
-	// 		po.Context.Client,
-	// 		cmpName,
-	// 		appName,
-	// 		po.sourcePath,
-	// 		os.Stdout,
-	// 		[]string{},
-	// 		[]string{},
-	// 		true,
-	// 		util.GetAbsGlobExps(po.sourcePath, po.ignores),
-	// 		po.show,
-	// 		component.ContainerAttributes{ // TODO-KDO: Retrieve container attributes from IDP
-	// 			SrcPath:      "",
-	// 			WorkingPaths: []string{""},
-	// 		},
-	// 	)
+	switch po.sourceType {
+	case config.LOCAL:
+		glog.V(4).Infof("Copying directory %s to pod", po.sourcePath)
+		err = component.PushLocal(
+			po.Context.Client,
+			cmpName,
+			appName,
+			po.sourcePath,
+			os.Stdout,
+			[]string{},
+			[]string{},
+			true,
+			util.GetAbsGlobExps(po.sourcePath, po.ignores),
+			po.show,
+			component.ContainerAttributes{ // TODO-KDO: Retrieve container attributes from IDP
+				SrcPath:      "/projects",
+				WorkingPaths: []string{""},
+			},
+		)
 
-	// 	if err != nil {
-	// 		return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
-	// 	}
+		if err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
+		}
 
-	// default:
-	// 	if err != nil {
-	// 		return errors.Wrapf(err, fmt.Sprintf("Failed to push component %v because the source type is not recognized", cmpName))
-	// 	}
-	// }
+	default:
+		if err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("Failed to push component %v because the source type is not recognized", cmpName))
+		}
+	}
 
 	log.Success("Changes successfully pushed to component")
 	return
@@ -282,7 +284,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 
 	// Add a defined annotation in order to appear in the help menu
 	pushCmd.Annotations = map[string]string{"command": "component"}
-	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+	pushCmd.SetUsageTemplate(kdoutil.CmdUsageTemplate)
 
 	return pushCmd
 }

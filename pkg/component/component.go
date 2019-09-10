@@ -1,7 +1,6 @@
 package component
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
@@ -21,8 +20,8 @@ import (
 	"github.com/redhat-developer/odo-fork/pkg/kdo/util/validation"
 	"github.com/redhat-developer/odo-fork/pkg/log"
 	"github.com/redhat-developer/odo-fork/pkg/preference"
+	"github.com/redhat-developer/odo-fork/pkg/storage"
 
-	// "github.com/redhat-developer/odo-fork/pkg/storage"
 	// urlpkg "github.com/redhat-developer/odo-fork/pkg/url"
 	"github.com/redhat-developer/odo-fork/pkg/util"
 
@@ -365,14 +364,13 @@ func CreateComponent(client *kclient.Client, componentConfig config.LocalConfigI
 	appName := componentConfig.GetApplication()
 	envVarsList := componentConfig.GetEnvVars()
 
-	// // create and get the storage to be created/mounted during the component creation
-	// storageList := getStorageFromConfig(&componentConfig)
-	// storageToBeMounted, _, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
-	// if err != nil {
-	// 	return err
-	// }
+	// create and get the storage to be created/mounted during the component creation
+	storageList := getStorageFromConfig(&componentConfig)
+	storageToBeMounted, _, err := storage.Push(client, storageList, componentConfig.GetName(), componentConfig.GetApplication(), false)
+	if err != nil {
+		return err
+	}
 	// TODO-KDO: remove following line and implement storage handling properly for KDO
-	storageToBeMounted := make(map[string]*corev1.PersistentVolumeClaim)
 	imgName := "jeevandroid/node-express-template:latest"
 	log.Successf("Initializing component")
 	createArgs := kclient.CreateArgs{
@@ -726,7 +724,10 @@ func PushLocal(client *kclient.Client, componentName string, applicationName str
 	}
 	s.End(true)
 
-	if show {
+	// TODO-KDO
+	// Implement once we've added the build jobs/tasks to KDO
+	// IMO, this should be in a separate function from `PushLocal()`
+	/*if show {
 		s = log.SpinnerNoSpin("Building component")
 	} else {
 		s = log.Spinner("Building component")
@@ -766,7 +767,7 @@ func PushLocal(client *kclient.Client, componentName string, applicationName str
 		return errors.Wrap(err, "unable to execute assemble script")
 	}
 
-	s.End(true)
+	s.End(true)*/
 
 	return nil
 }
@@ -919,7 +920,7 @@ func PushLocal(client *kclient.Client, componentName string, applicationName str
 // 	var err error
 // 	for _, path := range paths {
 // 		err = filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
-// 			if f != nil && strings.Contains(f.Name(), ".odo") {
+// 			if f != nil && strings.Contains(f.Name(), "udo") {
 // 				data, err := config.NewLocalConfigInfo(filepath.Dir(path))
 // 				if err != nil {
 // 					return err
@@ -1233,7 +1234,7 @@ func Exists(client *kclient.Client, componentName, applicationName string) (bool
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to create namespaced name")
 	}
-	deployment, _ := client.GetDeploymentsFromName(deploymentName)
+	deployment, _ := client.GetDeploymentFromName(deploymentName)
 	if deployment != nil {
 		return true, nil
 	}
@@ -1394,15 +1395,15 @@ func isEmpty(name string) (bool, error) {
 	return false, err // Either not empty or error, suits both cases
 }
 
-// // getStorageFromConfig gets all the storage from the config
-// // returns a list of storage in storage struct format
-// func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageList {
-// 	storageList := storage.StorageList{}
-// 	for _, storageVar := range localConfig.GetStorage() {
-// 		storageList.Items = append(storageList.Items, storage.GetMachineReadableFormat(storageVar.Name, storageVar.Size, storageVar.Path))
-// 	}
-// 	return storageList
-// }
+// getStorageFromConfig gets all the storage from the config
+// returns a list of storage in storage struct format
+func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageList {
+	storageList := storage.StorageList{}
+	for _, storageVar := range localConfig.GetStorage() {
+		storageList.Items = append(storageList.Items, storage.GetMachineReadableFormat(storageVar.Name, storageVar.Size, storageVar.Path))
+	}
+	return storageList
+}
 
 // // checkIfURLChangesWillBeMade checks to see if there are going to be any changes
 // // to the URLs when deploying and returns a true / false

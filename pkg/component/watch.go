@@ -130,7 +130,7 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 // ignores .git/* by default
 // inspired by https://github.com/openshift/origin/blob/e785f76194c57bd0e1674c2f2776333e1e0e4e78/pkg/oc/cli/cmd/rsync/rsync.go#L257
 // Parameters:
-//	client: occlient instance
+//	client: kclient instance
 //	out: io Writer instance
 // 	parameters: WatchParameters
 func WatchAndPush(client *kclient.Client, out io.Writer, parameters WatchParameters) error {

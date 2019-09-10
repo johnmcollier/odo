@@ -224,5 +224,5 @@ func generateVolumeNameFromPVC(pvc string) string {
 }
 
 func getAppRootVolumeName(dcName string) string {
-	return fmt.Sprintf("%s-s2idata", dcName)
+	return fmt.Sprintf("%s-idpdata", dcName)
 }

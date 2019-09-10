@@ -15,7 +15,8 @@ import (
 	"github.com/redhat-developer/odo-fork/pkg/kclient"
 )
 
-const DefaultIDPRepo = "https://raw.githubusercontent.com/johnmcollier/iterative-dev-packs/master/index.json"
+const DefaultIDPRepo = "https://raw.githubusercontent.com/johnmcollier/iterative-dev-packs/master"
+const DefaultIDPCatalog = DefaultIDPRepo + "/index.json"
 
 // CatalogEntry represents an entry in the index.json file for IDPs
 type CatalogEntry struct {
@@ -31,13 +32,12 @@ func List() ([]CatalogEntry, error) {
 	// See if we have an index.json already cached
 	var idpList []CatalogEntry
 	indexJSONFile := path.Join(os.TempDir(), ".kdo", "index.json")
-
 	// Load the index.json file into memory
 	var jsonBytes []byte
 	if _, err := os.Stat(indexJSONFile); os.IsNotExist(err) {
 		jsonBytes, err = downloadIDPs()
 		if err != nil {
-			return nil, fmt.Errorf("unable to download index.json from %s", DefaultIDPRepo)
+			return nil, fmt.Errorf("unable to download index.json from %s", DefaultIDPCatalog)
 		}
 	} else {
 		file, err := os.Open(indexJSONFile)
@@ -124,7 +124,7 @@ func VersionExists(client *kclient.Client, idpName string, idpVersion string) (b
 func downloadIDPs() ([]byte, error) {
 	// Download the IDP index.json
 	var httpClient = &http.Client{Timeout: 10 * time.Second}
-	resp, err := httpClient.Get(DefaultIDPRepo)
+	resp, err := httpClient.Get(DefaultIDPCatalog)
 	if err != nil {
 		return nil, err
 	}
