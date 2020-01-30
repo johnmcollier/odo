@@ -245,7 +245,7 @@ func createComponentFromDevfile(Client *kclient.Client, df *devfile.Devfile, com
 	kclient.AddPVCAndVolumeMountToPod(po, volumePVCMap, containerVolumesMap)
 
 	// Add the emptyDir source to the pod and mount it to the required containers
-	kclient.AddEmptyDirVolToPod(po, "sourceMount", "/projects", containerMountSources)
+	kclient.AddSourceVolumeToPod(po, "sourceMount", "/projects", containerMountSources)
 
 	return po, err
 
