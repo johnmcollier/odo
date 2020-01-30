@@ -614,7 +614,7 @@ func GenerateContainerSpec(name, image string, isPrivileged bool) corev1.Contain
 	return *container
 }
 
-// GeneratePodSpec generates the pod spec
+// GeneratePodSpec generates the pod spec with an emptyDir volume attached to it.
 func GeneratePodSpec(podName, namespace, serviceAccountName string, labels map[string]string, containers []corev1.Container) *corev1.Pod {
 	pod := &corev1.Pod{
 		TypeMeta: metav1.TypeMeta{
@@ -629,6 +629,11 @@ func GeneratePodSpec(podName, namespace, serviceAccountName string, labels map[s
 		Spec: corev1.PodSpec{
 			ServiceAccountName: serviceAccountName,
 			Containers:         containers,
+			Volumes: []corev1.Volume{
+				{
+					Name: "projectSource",
+				},
+			},
 		},
 	}
 

@@ -189,6 +189,10 @@ func createComponentFromDevfile(Client *kclient.Client, df *devfile.Devfile, com
 
 	// Get a container reference for each container in the set
 	containers := []corev1.Container{}
+
+	// Create an array to hold which containers need to mount the project source volume
+	var containerMountSources []string
+
 	// containerVolumesMap is a map of the Devfile container alias to the Devfile Volumes
 	containerVolumesMap := make(map[string][]devfile.DockerimageVolume)
 
@@ -201,8 +205,14 @@ func createComponentFromDevfile(Client *kclient.Client, df *devfile.Devfile, com
 
 			if component.Volumes != nil {
 				for _, volume := range component.Volumes {
+					glog.V(0).Info("Mount source for comopnent: ", *component.Alias)
 					containerVolumesMap[*component.Alias] = append(containerVolumesMap[*component.Alias], volume)
 				}
+			}
+
+			// If mountSources: true, add the component/container to the list of containers that need to mount the project source volume
+			if component.MountSources {
+				containerMountSources = append(containerMountSources, *component.Alias)
 			}
 		}
 	}
@@ -233,6 +243,9 @@ func createComponentFromDevfile(Client *kclient.Client, df *devfile.Devfile, com
 
 	// Add PVC to the Pod created
 	kclient.AddPVCAndVolumeMountToPod(po, volumePVCMap, containerVolumesMap)
+
+	// Add the emptyDir source to the pod and mount it to the required containers
+	kclient.AddEmptyDirVolToPod(po, "sourceMount", "/projects", containerMountSources)
 
 	return po, err
 

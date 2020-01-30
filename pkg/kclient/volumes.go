@@ -86,6 +86,25 @@ func AddPVCToPodSpec(pod *corev1.Pod, pvc, volumeName string) {
 
 }
 
+// AddSourceVolumeToPod adds an empty dir volume of the specified name to a given pod spec
+func AddSourceVolumeToPod(pod *corev1.Pod, volumeName string, mountPath string, mountSourceContainers []string) {
+	pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+		Name: volumeName,
+	})
+
+	// Mount the empty dir volume in all of the containers in the pod that set "mountSources: true"
+	for _, containerName := range mountSourceContainers {
+		for _, container := range pod.Spec.Containers {
+			if container.Name == containerName {
+				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+					Name:      volumeName,
+					MountPath: mountPath,
+				})
+			}
+		}
+	}
+}
+
 // AddVolumeMountToPodContainerSpec adds the Volume Mounts for the containers for a given PVC
 func AddVolumeMountToPodContainerSpec(pod *corev1.Pod, volumeName, pvc string, containerMountPathsMap map[string][]string) error {
 

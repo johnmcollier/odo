@@ -3,7 +3,8 @@ package component
 import (
 	"fmt"
 	"io"
-
+	"os"
+	
 	"github.com/fatih/color"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/redhat-developer/odo-fork/pkg/log"
 	"github.com/redhat-developer/odo-fork/pkg/project"
+	"github.com/redhat-developer/odo-fork/pkg/util"
 
 	kdoutil "github.com/redhat-developer/odo-fork/pkg/kdo/util"
 
@@ -187,15 +189,39 @@ func (po *PushOptions) Run() (err error) {
 		return nil
 	}
 
-	//
-	// TODO-KDO: Implement push once the persistent volume setup is complete
+	cmpName := po.localConfig.GetName()
+	appName := po.localConfig.GetApplication()
+	log.Infof("\nPushing to component %s of type %s", cmpName, po.sourceType)
 
-	// // Get SourceLocation here...
-	// po.sourcePath, err = po.localConfig.GetOSSourcePath()
-	// if err != nil {
-	// 	return errors.Wrap(err, "unable to retrieve OS source path to source location")
-	// }
+	switch po.sourceType {
+	case config.LOCAL:
+		glog.V(4).Infof("Copying directory %s to pod", po.sourcePath)
+		err = component.PushLocal(
+			po.Context.Client,
+			cmpName,
+			appName,
+			po.sourcePath,
+			os.Stdout,
+			[]string{},
+			[]string{},
+			true,
+			util.GetAbsGlobExps(po.sourcePath, po.ignores),
+			po.show,
+			component.ContainerAttributes{ // TODO-KDO: Retrieve container attributes from IDP
+				SrcPath:      "/projects",
+				WorkingPaths: []string{""},
+			},
+		)
 
+		if err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("Failed to push component: %v", cmpName))
+		}
+
+	default:
+		if err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("Failed to push component %v because the source type is not recognized", cmpName))
+		}
+	}
 	log.Success("Changes successfully pushed to component")
 	return
 }
