@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
 	kubeclient "github.com/openshift/odo/pkg/kclient"
@@ -30,7 +29,7 @@ type WatchParameters struct {
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-	WatchHandler func(*occlient.Client, *kclient.Client, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
+	WatchHandler func(*occlient.Client, *kubeclient.Client, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
 	StartChan chan bool
 	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
