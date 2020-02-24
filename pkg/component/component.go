@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	KubeClient "github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
@@ -631,7 +632,7 @@ func ApplyConfigCreateURL(client *occlient.Client, componentConfig config.LocalC
 //	show determines whether or not to show the log (passed in by po.show argument within /cmd)
 // Returns
 //	Error if any
-func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
+func PushLocal(client *occlient.Client, kclient *KubeClient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
 	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -699,7 +700,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	if isForcePush || len(files) > 0 {
 		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = client.CopyFile(path, pod.Name, targetPath, files, globExps)
+		err = kclient.CopyFile(path, pod.Name, "", targetPath, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")

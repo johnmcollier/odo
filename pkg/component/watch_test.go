@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	kubeclient "github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
@@ -101,7 +102,7 @@ type mockPushParameters struct {
 var mockPush mockPushParameters
 
 // Mock PushLocal to collect changed files and compare against expected changed files
-func mockPushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isPushForce bool, globExps []string, show bool) error {
+func mockPushLocal(client *occlient.Client, kclient *kubeclient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isPushForce bool, globExps []string, show bool) error {
 	muLock.Lock()
 	defer muLock.Unlock()
 	if componentName != mockPush.componentName || applicationName != mockPush.applicationName || isPushForce != mockPush.isForcePush || show != mockPush.show {
@@ -708,6 +709,7 @@ func TestWatchAndPush(t *testing.T) {
 			}
 
 			fkclient, _ := occlient.FakeNew()
+			fakeKClient, _ := kubeclient.FakeNew()
 
 			// Clear all the created temporary files
 			defer os.RemoveAll(basePath)
@@ -763,6 +765,7 @@ func TestWatchAndPush(t *testing.T) {
 			t.Logf("Starting WatchAndPush now\n")
 			err = WatchAndPush(
 				fkclient,
+				fakeKClient,
 				new(bytes.Buffer),
 				WatchParameters{
 					ComponentName:   tt.componentName,

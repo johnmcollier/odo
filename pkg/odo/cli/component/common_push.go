@@ -248,6 +248,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		glog.V(4).Infof("Copying directory %s to pod", cpo.sourcePath)
 		err = component.PushLocal(
 			cpo.Context.Client,
+			cpo.Context.KClient,
 			cmpName,
 			appName,
 			cpo.sourcePath,
@@ -271,6 +272,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		glog.V(4).Infof("Copying binary file %s to pod", cpo.sourcePath)
 		err = component.PushLocal(
 			cpo.Context.Client,
+			cpo.Context.KClient,
 			cmpName,
 			appName,
 			binaryDirectory,
