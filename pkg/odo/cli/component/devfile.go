@@ -31,11 +31,19 @@ feature progresses.
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
 
+	deletedFiles := []string{}
+	changedFiles := []string{}
+	isForcePush := false
+
 	// Parse devfile
 	devObj, err := devfile.Parse(po.devfilePath)
 	if err != nil {
 		return err
 	}
+
+	// Get the path of the project source code. Since the devfile needs to be at the root of the repository
+	// We can get the source dir by getting the parent dir for the devfile
+	po.sourcePath = filepath.Dir(po.devfilePath)
 
 	componentName, err := getComponentName()
 	if err != nil {
@@ -50,6 +58,9 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
+	po.doesComponentExist = devfileHandler.DoesComponentExist(componentName)
+
+	// Start or update the component
 	err = devfileHandler.Start()
 	if err != nil {
 		log.Errorf(
@@ -58,6 +69,24 @@ func (po *PushOptions) DevfilePush() (err error) {
 			err,
 		)
 		os.Exit(1)
+	}
+
+	// Sync the local source code to the component
+	err = devfileHandler.Push(po.sourcePath,
+		os.Stdout,
+		changedFiles,
+		deletedFiles,
+		isForcePush,
+		util.GetAbsGlobExps(po.sourcePath, po.ignores),
+		po.show,
+	)
+
+	if err != nil {
+		log.Errorf(
+			"Failed to sync to component with name %s.\nError: %v",
+			componentName,
+			err,
+		)
 	}
 
 	spinner.End(true)

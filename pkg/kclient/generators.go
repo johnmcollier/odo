@@ -37,6 +37,11 @@ func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, containers []corev1.C
 		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
 			Containers: containers,
+			Volumes: []corev1.Volume{
+				{
+					Name: "odo-projects",
+				},
+			},
 		},
 	}
 
