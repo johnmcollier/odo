@@ -16,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
-	kubeclient "github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
@@ -632,7 +631,7 @@ func ApplyConfigCreateURL(client *occlient.Client, componentConfig config.LocalC
 //	show determines whether or not to show the log (passed in by po.show argument within /cmd)
 // Returns
 //	Error if any
-func PushLocal(client *occlient.Client, kclient *kubeclient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
+func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
 	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -700,7 +699,7 @@ func PushLocal(client *occlient.Client, kclient *kubeclient.Client, componentNam
 
 	if isForcePush || len(files) > 0 {
 		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = kclient.CopyFile(path, pod.Name, "", targetPath, files, globExps)
+		err = client.KClient.CopyFile(path, pod.Name, "", targetPath, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
@@ -869,7 +868,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	}
 
-	project, err := client.GetProject(client.Namespace)
+	project, err := client.GetProject(client.KClient.Namespace)
 	if err != nil {
 		return ComponentList{}, err
 	}
@@ -886,7 +885,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 
 		// extract the labels we care about from each component
 		for _, elem := range dcList {
-			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.KClient.Namespace)
 			if err != nil {
 				return ComponentList{}, errors.Wrap(err, "Unable to get component")
 			}
@@ -902,7 +901,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 			return GetMachineReadableFormatForList(components), err
 		}
 		_, ok := componentNamesMap[component.Name]
-		if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
+		if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.KClient.Namespace {
 			components = append(components, component)
 		}
 
@@ -971,7 +970,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				}
 
 				// since the config file maybe belong to a component of a different project
-				client.Namespace = data.GetProject()
+				client.KClient.Namespace = data.GetProject()
 				exist, err := Exists(client, data.GetName(), data.GetApplication())
 				if err != nil {
 					return err
@@ -1390,7 +1389,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 	}
 
 	component = getMachineReadableFormat(componentName, componentType)
-	component.Namespace = client.Namespace
+	component.Namespace = client.KClient.Namespace
 	component.Spec.App = applicationName
 	component.Spec.Source = path
 	component.Spec.URL = urls

@@ -74,7 +74,7 @@ func (pco *ProjectCreateOptions) Run() (err error) {
 	log.Successf(successMessage)
 
 	// Set the current project when created. If it's json output, we output a json output error
-	err = project.SetCurrent(pco.Client, pco.KClient, pco.projectName)
+	err = project.SetCurrent(pco.Client, pco.projectName)
 	if err != nil {
 		return err
 	}

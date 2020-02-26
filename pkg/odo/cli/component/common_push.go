@@ -142,7 +142,8 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 			)
 		}
 	}
-	cpo.Context.Client.Namespace = prjName
+	fmt.Println("HI" + prjName)
+	cpo.Context.Client.KClient.Namespace = prjName
 	return
 }
 
@@ -248,7 +249,6 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		glog.V(4).Infof("Copying directory %s to pod", cpo.sourcePath)
 		err = component.PushLocal(
 			cpo.Context.Client,
-			cpo.Context.KClient,
 			cmpName,
 			appName,
 			cpo.sourcePath,
@@ -272,7 +272,6 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		glog.V(4).Infof("Copying binary file %s to pod", cpo.sourcePath)
 		err = component.PushLocal(
 			cpo.Context.Client,
-			cpo.Context.KClient,
 			cmpName,
 			appName,
 			binaryDirectory,

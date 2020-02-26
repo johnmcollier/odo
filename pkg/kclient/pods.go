@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -90,6 +91,7 @@ func (c *Client) ExecCMDInContainer(podName, containerName string, cmd []string,
 		podExecOptions.Container = containerName
 	}
 
+	fmt.Println("*** " + c.Namespace)
 	req := c.KubeClient.CoreV1().RESTClient().
 		Post().
 		Namespace(c.Namespace).
