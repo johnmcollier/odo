@@ -10,7 +10,6 @@ import (
 
 	"github.com/openshift/odo/pkg/util"
 
-	kubeclient "github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 
 	"github.com/fsnotify/fsnotify"
@@ -29,7 +28,7 @@ type WatchParameters struct {
 	// List/Slice of files/folders in component source, the updates to which need not be pushed to component deployed pod
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
-	WatchHandler func(*occlient.Client, *kubeclient.Client, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
+	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
 	StartChan chan bool
 	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
@@ -137,7 +136,7 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 //	client: occlient instance
 //	out: io Writer instance
 // 	parameters: WatchParameters
-func WatchAndPush(client *occlient.Client, kclient *kubeclient.Client, out io.Writer, parameters WatchParameters) error {
+func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParameters) error {
 	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	// delayInterval int
 	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
@@ -300,11 +299,11 @@ func WatchAndPush(client *occlient.Client, kclient *kubeclient.Client, out io.Wr
 				}
 				if fileInfo.IsDir() {
 					glog.V(4).Infof("Copying files %s to pod", changedFiles)
-					err = parameters.WatchHandler(client, kclient, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false, parameters.FileIgnores, parameters.Show)
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 				} else {
 					pathDir := filepath.Dir(parameters.Path)
 					glog.V(4).Infof("Copying file %s to pod", parameters.Path)
-					err = parameters.WatchHandler(client, kclient, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, parameters.Show)
+					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 				}
 				if err != nil {
 					// Intentionally not exiting on error here.

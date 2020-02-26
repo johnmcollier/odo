@@ -2775,8 +2775,20 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	return &info, nil
 }
 
-// ExecCMDInContainer execute command in first container of a pod
-func (c *Client) ExecCMDInContainer(podName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+// ExecCMDInContainer execute command in the specified container of a pod. If `containerName` is blank, it execs in the first container.
+func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+	podExecOptions := corev1.PodExecOptions{
+		Command: cmd,
+		Stdin:   stdin != nil,
+		Stdout:  stdout != nil,
+		Stderr:  stderr != nil,
+		TTY:     tty,
+	}
+
+	// If a container name was passed in, set it in the exec options, otherwise leave it blank
+	if containerName != "" {
+		podExecOptions.Container = containerName
+	}
 
 	req := c.kubeClient.CoreV1().RESTClient().
 		Post().
@@ -2976,7 +2988,7 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 	cmdArr := []string{"rm", "-rf"}
 	cmdArr = append(cmdArr, rmPaths...)
 
-	err := c.ExecCMDInContainer(targetPodName, cmdArr, writer, writer, reader, false)
+	err := c.ExecCMDInContainer(targetPodName, "", cmdArr, writer, writer, reader, false)
 	if err != nil {
 		return err
 	}

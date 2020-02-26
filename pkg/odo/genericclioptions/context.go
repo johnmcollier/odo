@@ -9,7 +9,6 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -54,14 +53,6 @@ func client(command *cobra.Command) *occlient.Client {
 	util.LogErrorAndExit(err, "")
 
 	return client
-}
-
-// kubeClient creates a kubeclient (kclient) based on the command flags
-func kubeClient(command *cobra.Command) *kclient.Client {
-	kc, err := kclient.New()
-	util.LogErrorAndExit(err, "")
-
-	return kc
 }
 
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
@@ -263,7 +254,6 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	client := client(command)
-	kc := kubeClient(command)
 
 	// Check for valid config
 	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
@@ -283,7 +273,6 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	// create the internal context representation based on calculated values
 	internalCxt := internalCxt{
 		Client:          client,
-		KClient:         kc,
 		Project:         namespace,
 		Application:     app,
 		OutputFlag:      outputFlag,
@@ -317,7 +306,6 @@ type Context struct {
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
 	Client          *occlient.Client
-	KClient         *kclient.Client
 	command         *cobra.Command
 	Project         string
 	Application     string

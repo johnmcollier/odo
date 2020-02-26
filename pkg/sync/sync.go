@@ -1,4 +1,4 @@
-package kclient
+package sync
 
 import (
 	taro "archive/tar"
@@ -13,12 +13,16 @@ import (
 	"k8s.io/klog/glog"
 )
 
+type SyncClient interface {
+	ExecCMDInContainer(string, string, []string, io.Writer, io.Writer, io.Reader, bool) error
+}
+
 // CopyFile copies localPath directory or list of files in copyFiles list to the directory in running Pod.
 // copyFiles is list of changed files captured during `odo watch` as well as binary file path
 // During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
-func (c *Client) CopyFile(localPath string, targetPodName string, targetContainerName string, targetPath string, copyFiles []string, globExps []string) error {
+func CopyFile(client SyncClient, localPath string, targetPodName string, targetContainerName string, targetPath string, copyFiles []string, globExps []string) error {
 
 	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
 	// Linux based and thus: "\opt\app-root\src" would not work correctly.
@@ -43,7 +47,7 @@ func (c *Client) CopyFile(localPath string, targetPodName string, targetContaine
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	err := c.ExecCMDInContainer(targetPodName, targetContainerName, cmdArr, &stdout, &stderr, reader, false)
+	err := client.ExecCMDInContainer(targetPodName, targetContainerName, cmdArr, &stdout, &stderr, reader, false)
 	if err != nil {
 		glog.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
 		glog.Errorf("stdout: %s\n", stdout.String())

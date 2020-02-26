@@ -123,7 +123,6 @@ func (wo *WatchOptions) Validate() (err error) {
 func (wo *WatchOptions) Run() (err error) {
 	err = component.WatchAndPush(
 		wo.Context.Client,
-		wo.Context.KClient,
 		os.Stdout,
 		component.WatchParameters{
 			ComponentName:   wo.localConfig.GetName(),
