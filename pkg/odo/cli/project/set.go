@@ -65,7 +65,7 @@ func (pso *ProjectSetOptions) Validate() (err error) {
 // Run runs the project set command
 func (pso *ProjectSetOptions) Run() (err error) {
 	current := pso.Project
-	err = project.SetCurrent(pso.Client, pso.projectName)
+	err = project.SetCurrent(pso.Client, pso.KClient, pso.projectName)
 	if err != nil {
 		return err
 	}

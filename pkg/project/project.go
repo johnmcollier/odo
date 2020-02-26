@@ -4,6 +4,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 
+	kubeclient "github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 
@@ -17,7 +18,7 @@ func GetCurrent(client *occlient.Client) string {
 }
 
 // SetCurrent sets the projectName as current project
-func SetCurrent(client *occlient.Client, projectName string) error {
+func SetCurrent(client *occlient.Client, kclient *kubeclient.Client, projectName string) error {
 	err := client.SetCurrentProject(projectName)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current project to"+projectName)
