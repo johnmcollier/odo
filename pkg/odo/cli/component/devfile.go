@@ -60,6 +60,16 @@ func (po *PushOptions) DevfilePush() (err error) {
 		os.Exit(1)
 	}
 
+	// Sync the local source code to the component
+	err = devfileHandler.Push(po.sourcePath, os.Stdout)
+	if err != nil {
+		log.Errorf(
+			"Failed to sync to component with name %s.\nError: %v",
+			componentName,
+			err,
+		)
+	}
+
 	spinner.End(true)
 	return
 }
