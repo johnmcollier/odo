@@ -43,3 +43,7 @@ func (k Adapter) Push(path string, out io.Writer, files []string, delFiles []str
 
 	return nil
 }
+
+func (k Adapter) DoesComponentExist(cmpName string) bool {
+	return k.componentAdapter.DoesComponentExist(cmpName)
+}

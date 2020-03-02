@@ -76,6 +76,7 @@ func (a Adapter) Start() (err error) {
 	return err
 }
 
+// Push syncs source code from the user's disk to the component
 func (a Adapter) Push(path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
 	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
@@ -102,18 +103,26 @@ func (a Adapter) Push(path string, out io.Writer, files []string, delFiles []str
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container from pod: %s", podSelector)
 	}
+	fmt.Println(containerName)
 
 	// Sync the files to the pod
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
 	glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-	err = sync.CopyFile(&a.Client, "", pod.GetName(), containerName, "/projects", files, globExps)
+	err = sync.CopyFile(&a.Client, path, pod.GetName(), containerName, "/projects", files, globExps)
 	if err != nil {
 		s.End(false)
 		return errors.Wrap(err, "unable push files to pod")
 	}
+	s.End(true)
+
 	return nil
+}
+
+// DoesComponentExist returns true if a component with the specified name exists, false otherwise
+func (a Adapter) DoesComponentExist(cmpName string) bool {
+	return utils.ComponentExists(a.Client, cmpName)
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true
