@@ -60,15 +60,18 @@ func (po *PushOptions) DevfilePush() (err error) {
 		os.Exit(1)
 	}
 
+	// Get the path of the project source code. Since the devfile needs to be at the root of the repository
+	// We can get the source dir by getting the parent dir for the devfile
+
 	// Sync the local source code to the component
-	err = devfileHandler.Push(po.sourcePath, os.Stdout)
+	/*err = devfileHandler.Push(po.sourcePath, os.Stdout)
 	if err != nil {
 		log.Errorf(
 			"Failed to sync to component with name %s.\nError: %v",
 			componentName,
 			err,
 		)
-	}
+	}*/
 
 	spinner.End(true)
 	return
