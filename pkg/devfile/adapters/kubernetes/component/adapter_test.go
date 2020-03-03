@@ -17,28 +17,21 @@ import (
 
 func TestStart(t *testing.T) {
 
+	testComponentName := "test"
+
 	tests := []struct {
 		name          string
 		componentType versionsCommon.DevfileComponentType
-		componentName string
 		wantErr       bool
 	}{
 		{
 			name:          "Case: Invalid devfile",
 			componentType: "",
-			componentName: "",
 			wantErr:       true,
 		},
 		{
 			name:          "Case: Valid devfile",
 			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			componentName: "test-name",
-			wantErr:       false,
-		},
-		{
-			name:          "Case: Valid devfile, empty component name",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			componentName: "",
 			wantErr:       false,
 		},
 	}
@@ -51,7 +44,7 @@ func TestStart(t *testing.T) {
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
-				ComponentName: tt.componentName,
+				ComponentName: testComponentName,
 				Devfile:       devObj,
 			}
 
@@ -62,7 +55,7 @@ func TestStart(t *testing.T) {
 			go func() {
 				podStatus := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: tt.componentName,
+						Name: testComponentName,
 					},
 					Status: corev1.PodStatus{
 						Phase: corev1.PodRunning,
@@ -81,7 +74,6 @@ func TestStart(t *testing.T) {
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("component adapter start unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-
 		})
 	}
 
