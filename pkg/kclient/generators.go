@@ -10,6 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+// OdoSourceVolume is the constant containing the name of the emptyDir volume containing the project source
+var OdoSourceVolume = "odo-projects"
+
 // GenerateContainer creates a container spec that can be used when creating a pod
 func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar, resourceReqs corev1.ResourceRequirements) *corev1.Container {
 	container := &corev1.Container{
@@ -39,7 +42,7 @@ func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, containers []corev1.C
 			Containers: containers,
 			Volumes: []corev1.Volume{
 				{
-					Name: "odo-projects",
+					Name: OdoSourceVolume,
 				},
 			},
 		},

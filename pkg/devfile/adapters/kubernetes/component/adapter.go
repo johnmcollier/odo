@@ -130,7 +130,7 @@ func (a Adapter) DoesComponentExist(cmpName string) bool {
 func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, error) {
 	for _, c := range containers {
 		for _, vol := range c.VolumeMounts {
-			if vol.Name == "odo-projects" {
+			if vol.Name == kclient.OdoSourceVolume {
 				return c.Name, nil
 			}
 		}
