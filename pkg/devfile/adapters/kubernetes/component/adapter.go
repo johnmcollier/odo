@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"io"
-	"path/filepath"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -113,7 +112,7 @@ func (a Adapter) Push(path string, out io.Writer, files []string, delFiles []str
 	// If there were any files deleted locally, delete them remotely too.
 	if len(delFiles) > 0 {
 		reader, writer := io.Pipe()
-		rmPaths := getRemoteFilesMarkedForDeletion(delFiles, kclient.OdoSourceVolumeMount)
+		rmPaths := util.GetRemoteFilesMarkedForDeletion(delFiles, kclient.OdoSourceVolumeMount)
 		glog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
 		cmdArr := []string{"rm", "-rf"}
 		cmdArr = append(cmdArr, rmPaths...)
@@ -152,15 +151,4 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 	}
 
 	return "", fmt.Errorf("No containers specified mountSources: true")
-}
-
-// getRemoteFilesMarkedForDeletion returns the list of remote files marked for deletion
-func getRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder string) []string {
-	var rmPaths []string
-	for _, delRelPath := range delSrcRelPaths {
-		// since the paths inside the container are linux oriented
-		// so we convert the paths accordingly
-		rmPaths = append(rmPaths, filepath.ToSlash(filepath.Join(remoteFolder, delRelPath)))
-	}
-	return rmPaths
 }
