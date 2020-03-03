@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +17,7 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
+	"github.com/openshift/odo/pkg/util"
 )
 
 // New instantiantes a component adapter
@@ -81,12 +83,12 @@ func (a Adapter) Push(path string, out io.Writer, files []string, delFiles []str
 	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
-	/*emptyDir, err := isEmpty(path)
+	emptyDir, err := util.IsEmpty(path)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to check directory: %s", path)
 	} else if emptyDir {
 		return errors.New(fmt.Sprintf("Directory / file %s is empty", path))
-	}*/
+	}
 
 	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
 	watchOptions := metav1.ListOptions{
@@ -103,11 +105,24 @@ func (a Adapter) Push(path string, out io.Writer, files []string, delFiles []str
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container from pod: %s", podSelector)
 	}
-	fmt.Println(containerName)
 
 	// Sync the files to the pod
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
+
+	// If there were any files deleted locally, delete them remotely too.
+	if len(delFiles) > 0 {
+		reader, writer := io.Pipe()
+		rmPaths := getRemoteFilesMarkedForDeletion(delFiles, kclient.OdoSourceVolumeMount)
+		glog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
+		cmdArr := []string{"rm", "-rf"}
+		cmdArr = append(cmdArr, rmPaths...)
+
+		err := a.Client.ExecCMDInContainer(pod.Name, containerName, cmdArr, writer, writer, reader, false)
+		if err != nil {
+			return err
+		}
+	}
 
 	glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 	err = sync.CopyFile(&a.Client, path, pod.GetName(), containerName, "/projects", files, globExps)
@@ -137,4 +152,15 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 	}
 
 	return "", fmt.Errorf("No containers specified mountSources: true")
+}
+
+// getRemoteFilesMarkedForDeletion returns the list of remote files marked for deletion
+func getRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder string) []string {
+	var rmPaths []string
+	for _, delRelPath := range delSrcRelPaths {
+		// since the paths inside the container are linux oriented
+		// so we convert the paths accordingly
+		rmPaths = append(rmPaths, filepath.ToSlash(filepath.Join(remoteFolder, delRelPath)))
+	}
+	return rmPaths
 }
