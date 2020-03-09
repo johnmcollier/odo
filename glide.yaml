@@ -68,3 +68,5 @@ import:
   version: v1.2.2
 - package: github.com/xeipuuv/gojsonschema
   version: v1.2.0
+- package: github.com/docker/docker
+  version: v19.03.7
