@@ -715,3 +715,29 @@ func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesCh
 	}
 	return filesChangedFiltered, filesDeletedFiltered
 }
+
+// DownloadFile uses the url to download the file to the filepath
+func DownloadFile(url string, filepath string) error {
+	// Create the file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close() // #nosec G307
+
+	// Get the data
+	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// Write the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
