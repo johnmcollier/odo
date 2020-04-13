@@ -47,7 +47,7 @@ func (a Adapter) createComponent() (err error) {
 	// Loop over each component and start a container for it
 	for _, comp := range supportedComponents {
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range componentAliasToVolumes[componentName] {
+		for _, vol := range componentAliasToVolumes[*comp.Alias] {
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
 				Source: volumeMapping[*vol.Name],
@@ -55,7 +55,6 @@ func (a Adapter) createComponent() (err error) {
 			}
 			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
 		}
-
 		err = a.pullAndStartContainer(dockerVolumeMounts, projectVolumeName, comp)
 		if err != nil {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
@@ -90,7 +89,6 @@ func (a Adapter) updateComponent() (err error) {
 
 	// Get the storage adapter and create the volumes if it does not exist
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
-	fmt.Println(len(uniqueStorage))
 	err = stoAdapter.Create(uniqueStorage)
 
 	supportedComponents := adaptersCommon.GetSupportedComponents(a.Devfile.Data)
@@ -107,7 +105,7 @@ func (a Adapter) updateComponent() (err error) {
 		}
 
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range componentAliasToVolumes[componentName] {
+		for _, vol := range componentAliasToVolumes[*comp.Alias] {
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
 				Source: volumeMapping[*vol.Name],
