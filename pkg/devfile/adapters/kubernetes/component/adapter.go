@@ -19,6 +19,7 @@ import (
 
 	"github.com/openshift/odo/pkg/exec"
 
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -209,7 +210,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
-	componentAliasToVolumes := utils.GetVolumes(a.Devfile)
+	componentAliasToVolumes := adaptersCommon.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
