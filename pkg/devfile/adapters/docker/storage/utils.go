@@ -26,7 +26,6 @@ func CreateComponentStorage(Client *lclient.Client, storages []common.Storage, c
 			return err
 		}
 
-		fmt.Println("*** " + existingDockerVolName)
 		if len(existingDockerVolName) == 0 {
 			glog.V(3).Infof("Creating a Docker volume for %v", volumeName)
 			_, err := Create(Client, volumeName, componentName, dockerVolName)

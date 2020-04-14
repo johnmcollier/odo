@@ -90,9 +90,11 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
-	err = component.ApplyConfig(nil, po.Context.KClient, config.LocalConfigInfo{}, *po.EnvSpecificInfo, color.Output, po.doesComponentExist)
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
+	if !pushtarget.IsPushTargetDocker() {
+		err = component.ApplyConfig(nil, po.Context.KClient, config.LocalConfigInfo{}, *po.EnvSpecificInfo, color.Output, po.doesComponentExist)
+		if err != nil {
+			odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
+		}
 	}
 
 	pushParams := common.PushParameters{
