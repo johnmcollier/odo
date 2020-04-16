@@ -6,9 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fatih/color"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -86,8 +83,12 @@ func (po *PushOptions) DevfilePush() (err error) {
 
 	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, platformContext)
 
-	if err != nil {
-		return err
+		po.Context.KClient.Namespace = po.namespace
+
+		kc := kubernetes.KubernetesContext{
+			Namespace: po.namespace,
+		}
+		platformContext = kc
 	}
 
 	if !pushtarget.IsPushTargetDocker() {
@@ -96,12 +97,13 @@ func (po *PushOptions) DevfilePush() (err error) {
 			odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 		}
 	}
-
+	
 	pushParams := common.PushParameters{
 		Path:            po.sourcePath,
 		IgnoredFiles:    po.ignores,
 		ForceBuild:      po.forceBuild,
 		Show:            po.show,
+		EnvSpecificInfo: *po.EnvSpecificInfo,
 		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
