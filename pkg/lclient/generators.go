@@ -12,6 +12,7 @@ func (dc *Client) GenerateContainerConfig(image string, entrypoint []string, cmd
 		Cmd:        cmd,
 		Env:        envVars,
 		Labels:     labels,
+		User:       "root",
 	}
 	return containerConfig
 }
