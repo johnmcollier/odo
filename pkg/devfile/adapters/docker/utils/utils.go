@@ -10,6 +10,8 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/util"
+
 	"github.com/pkg/errors"
 )
 
@@ -28,6 +30,17 @@ func GetComponentContainers(client lclient.Client, name string) (containers []ty
 	containers = client.GetContainersByComponent(name, containerList)
 
 	return
+}
+
+// GetContainerIDForAlias returns the container id for the devfile alias from a list of containers
+func GetContainerIDForAlias(containers []types.Container, componentName string) string {
+	containerID := ""
+	for _, container := range containers {
+		if container.Labels["alias"] == componentName {
+			containerID = container.ID
+		}
+	}
+	return containerID
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to an array of strings, as expected by Docker
@@ -113,9 +126,13 @@ func containerHasMount(devfileMount mount.Mount, containerMounts []types.MountPo
 
 // GetSupervisordVolumeLabels returns the label selectors used to retrieve the supervisord volume
 func GetSupervisordVolumeLabels() map[string]string {
+	image := adaptersCommon.GetBootstrapperImage()
+	_, _, _, imageTag := util.ParseComponentImageName(image)
+
 	supervisordLabels := map[string]string{
-		"name": adaptersCommon.SupervisordVolumeName,
-		"type": "supervisord",
+		"name":    adaptersCommon.SupervisordVolumeName,
+		"type":    "supervisord",
+		"version": imageTag,
 	}
 	return supervisordLabels
 }
@@ -149,13 +166,19 @@ func StartBootstrapSupervisordInitContainer(client lclient.Client, supervisordVo
 		adaptersCommon.SupervisordMountPath,
 	}
 
-	s := log.Spinner("Pulling image " + image)
+	var s *log.Status
+	if log.IsDebug() {
+		s = log.Spinner("Pulling image " + image)
+		defer s.End(false)
+	}
+
 	err := client.PullImage(image)
 	if err != nil {
-		s.End(false)
 		return errors.Wrapf(err, "Unable to pull %s image", image)
 	}
-	s.End(true)
+	if log.IsDebug() {
+		s.End(true)
+	}
 
 	containerConfig := client.GenerateContainerConfig(image, command, args, nil, supervisordLabels)
 	hostConfig := container.HostConfig{}
@@ -163,13 +186,17 @@ func StartBootstrapSupervisordInitContainer(client lclient.Client, supervisordVo
 	AddVolumeToComp(supervisordVolumeName, adaptersCommon.SupervisordMountPath, &hostConfig)
 
 	// Create the docker container
-	s = log.Spinner("Starting container for " + image)
-	defer s.End(false)
+	if log.IsDebug() {
+		s = log.Spinner("Starting container for " + image)
+		defer s.End(false)
+	}
 	err = client.StartContainer(&containerConfig, &hostConfig, nil)
 	if err != nil {
 		return err
 	}
-	s.End(true)
+	if log.IsDebug() {
+		s.End(true)
+	}
 
 	return nil
 }
