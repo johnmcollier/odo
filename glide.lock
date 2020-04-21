@@ -1,5 +1,5 @@
-hash: bf3f55c6b26dd2b9bd6d7223ca232f1cd0e6be7eea57a478b30b832d51273e8f
-updated: 2020-04-15T10:21:35.097689288-04:00
+hash: 8cf0ddeb061828d4f6f54d9c51d0e3ef752ec740cba5df4a6db9ec56411f62c6
+updated: 2020-04-21T00:41:35.728105311-04:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -134,7 +134,6 @@ imports:
 - name: github.com/golang/mock
   version: 3a35fb6e3e18b9dbfee291262260dee7372d2a92
   subpackages:
-  - errdefs
   - gomock
 - name: github.com/golang/protobuf
   version: b4deda0973fb4c70b50d226b1af49f3da59f5265
