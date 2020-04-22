@@ -2,7 +2,11 @@ package component
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
+
+	"github.com/docker/go-connections/nat"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -15,10 +19,13 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 )
+
+var LocalhostIP = "127.0.0.1"
 
 func (a Adapter) createComponent() (err error) {
 	componentName := a.ComponentName
@@ -187,9 +194,13 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 }
 
 func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
-	hostConfig := container.HostConfig{
-		Mounts: mounts,
+	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
+
+	hostConfig, err := a.generateAndGetHostConfig()
+	if err != nil {
+		return err
 	}
+	hostConfig.Mounts = mounts
 
 	runCommand, err := adaptersCommon.GetRunCommand(a.Devfile.Data, a.devfileRunCmd)
 	if err != nil {
@@ -212,9 +223,6 @@ func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, 
 		}
 	}
 
-	// Generate the container config after updating the component with the necessary data
-	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
-
 	// Create the docker container
 	s := log.Spinner("Starting container for " + *comp.Image)
 	defer s.End(false)
@@ -222,6 +230,7 @@ func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, 
 	if err != nil {
 		return err
 	}
+
 	s.End(true)
 	return nil
 }
@@ -307,4 +316,53 @@ func (a Adapter) InitRunContainerSupervisord(containerName, podName string, cont
 	}
 
 	return
+}
+
+func (a Adapter) generateAndGetHostConfig() (container.HostConfig, error) {
+	// Convert the port bindings from env.yaml and generate docker host config
+	portMap, err := getPortMap()
+	if err != nil {
+		return container.HostConfig{}, err
+	}
+	hostConfig := container.HostConfig{}
+	if len(portMap) > 0 {
+		hostConfig = a.Client.GenerateHostConfig(false, false, portMap)
+	}
+	return hostConfig, nil
+}
+
+func getPortMap() (nat.PortMap, error) {
+	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
+	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
+	dir, err := os.Getwd()
+	if err != nil {
+		return nat.PortMap{}, err
+	}
+	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
+	if err != nil {
+		return nat.PortMap{}, err
+	}
+	urlArr := envInfo.GetURL()
+	if len(urlArr) > 0 {
+		portmap := nat.PortMap{}
+		for _, element := range urlArr {
+			if element.ExposedPort > 0 {
+				port, err := nat.NewPort("tcp", strconv.Itoa(element.Port))
+				if err != nil {
+					return nat.PortMap{}, err
+				}
+				portmap[port] = []nat.PortBinding{
+					nat.PortBinding{
+						HostIP:   LocalhostIP,
+						HostPort: strconv.Itoa(element.ExposedPort),
+					},
+				}
+				log.Info("\nApplying URL configuration")
+				log.Successf("URL %v:%v created", LocalhostIP, element.ExposedPort)
+			}
+		}
+		return portmap, nil
+	}
+
+	return nat.PortMap{}, nil
 }
