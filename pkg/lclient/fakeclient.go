@@ -303,8 +303,6 @@ func FakeNewMockClient(ctrl *gomock.Controller) (*Client, *MockDockerClient) {
 
 	dockerClient := NewMockDockerClient(ctrl)
 
-	localClient := Client{
-		Client: dockerClient,
-	}
+	localClient := Client{}
 	return &localClient, dockerClient
 }

@@ -147,7 +147,7 @@ func (a Adapter) updateComponent() (err error) {
 			}
 
 			// See if the container needs to be updated
-			if utils.DoesContainerNeedUpdating(comp, containerConfig, dockerVolumeMounts, mounts) {
+			if !utils.DoesContainerNeedUpdating(comp, containerConfig, dockerVolumeMounts, mounts) {
 				s := log.Spinner("Updating the component " + *comp.Alias)
 				defer s.End(false)
 				// Remove the container
@@ -334,6 +334,7 @@ func (a Adapter) generateAndGetHostConfig() (container.HostConfig, error) {
 func getPortMap() (nat.PortMap, error) {
 	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
 	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
+	fmt.Println("HI")
 	dir, err := os.Getwd()
 	if err != nil {
 		return nat.PortMap{}, err

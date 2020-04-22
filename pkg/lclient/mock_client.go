@@ -6,6 +6,9 @@ package lclient
 
 import (
 	context "context"
+	io "io"
+	reflect "reflect"
+
 	types "github.com/docker/docker/api/types"
 	container "github.com/docker/docker/api/types/container"
 	filters "github.com/docker/docker/api/types/filters"
@@ -13,8 +16,6 @@ import (
 	registry "github.com/docker/docker/api/types/registry"
 	volume "github.com/docker/docker/api/types/volume"
 	gomock "github.com/golang/mock/gomock"
-	io "io"
-	reflect "reflect"
 )
 
 // MockDockerClient is a mock of DockerClient interface
@@ -215,4 +216,12 @@ func (m *MockDockerClient) VolumeRemove(ctx context.Context, volumeID string, fo
 func (mr *MockDockerClientMockRecorder) VolumeRemove(ctx, volumeID, force interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VolumeRemove", reflect.TypeOf((*MockDockerClient)(nil).VolumeRemove), ctx, volumeID, force)
+}
+
+func (m *MockDockerClient) ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error) {
+	return types.HijackedResponse{}, errContainerExecAttach
+}
+
+func (m *MockDockerClientMockRecorder) ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error) {
+	return types.HijackedResponse{}, errContainerExecAttach
 }
