@@ -80,3 +80,5 @@ import:
   version: v1.3.3
   subpackages:
   - errdefs
+- package: github.com/golang/mock
+  version: v1.4.3

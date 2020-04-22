@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
 	volumeTypes "github.com/docker/docker/api/types/volume"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // This mock client will return container and images lists
@@ -184,6 +185,9 @@ func (m *mockDockerClient) ContainerExecInspect(ctx context.Context, execID stri
 func (m *mockDockerClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
 	return nil
 }
+func (m *mockDockerClient) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
+	return nil
+}
 
 // This mock client will return errors for each call to a docker function
 type mockDockerErrorClient struct {
@@ -215,6 +219,7 @@ var errContainerExecStart = errors.New("error starting container exec")
 var errContainerExecAttach = errors.New("error attach container exec")
 var errContainerExecInspect = errors.New("error inspecting container exec")
 var errCopyToContainer = errors.New("error copying to container")
+var errRemoveVolume = errors.New("error removing volume")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
 	return nil, errImageList
@@ -285,4 +290,21 @@ func (m *mockDockerErrorClient) ContainerExecInspect(ctx context.Context, execID
 
 func (m *mockDockerErrorClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
 	return errCopyToContainer
+}
+
+func (m *mockDockerErrorClient) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
+	return errRemoveVolume
+}
+
+// FakeNewMockClient returns a fake local client instance that can be used in unit tests
+// To regenerate the mock file, in the same directory as mock_client.go, run:
+// 'mockgen -source=client.go -package=lclient DockerClient > /tmp/mock_client.go ; cp /tmp/mock_client.go ./mock_client.go'
+func FakeNewMockClient(ctrl *gomock.Controller) (*Client, *MockDockerClient) {
+
+	dockerClient := NewMockDockerClient(ctrl)
+
+	localClient := Client{
+		Client: dockerClient,
+	}
+	return &localClient, dockerClient
 }
