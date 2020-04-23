@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 
@@ -132,7 +133,7 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			return err
 		}
 
-		if pushtarget.IsPushTargetDocker() {
+		if o.PushTarget == preference.DockerPushTarget {
 			o.exposedPort, err = url.GetValidExposedPortNumber(o.exposedPort)
 			if err != nil {
 				return err
@@ -141,7 +142,7 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 		if len(args) != 0 {
 			o.urlName = args[0]
-		} else if pushtarget.IsPushTargetDocker() {
+		} else if o.PushTarget == preference.DockerPushTarget {
 			o.urlName = "local-" + url.GetURLName(componentName, o.componentPort)
 		} else {
 			o.urlName = url.GetURLName(componentName, o.componentPort)
@@ -180,17 +181,17 @@ func (o *URLCreateOptions) Validate() (err error) {
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		// if experimental mode is enabled, and devfile is provided.
 		// check if valid host is provided
-		if !pushtarget.IsPushTargetDocker() && len(o.host) <= 0 {
+		if o.PushTarget == preference.KubePushTarget && len(o.host) <= 0 {
 			return fmt.Errorf("host must be provided in order to create ingress")
 		}
 		for _, localURL := range o.EnvSpecificInfo.GetURL() {
 			// if current push target is Kube, but localURL contains ExposedPort
 			// if current push target is docker, but localURL contains Host
 			if o.urlName == localURL.Name &&
-				((!pushtarget.IsPushTargetDocker() && localURL.ExposedPort > 0) || (pushtarget.IsPushTargetDocker() && len(localURL.Host) > 0)) {
+				((o.PushTarget == preference.KubePushTarget && localURL.ExposedPort > 0) || (o.PushTarget == preference.DockerPushTarget && len(localURL.Host) > 0)) {
 				return fmt.Errorf("the url %s already exists for a different push target, please rerun the command using a different url name", o.urlName)
 			}
-			if !pushtarget.IsPushTargetDocker() {
+			if o.PushTarget == preference.KubePushTarget {
 				curIngressDomain := fmt.Sprintf("%v.%v", o.urlName, o.host)
 				ingressDomainEnv := fmt.Sprintf("%v.%v", localURL.Name, localURL.Host)
 				if curIngressDomain == ingressDomainEnv {
@@ -227,7 +228,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		if pushtarget.IsPushTargetDocker() {
+		if o.PushTarget == preference.DockerPushTarget {
 			for _, localURL := range o.EnvSpecificInfo.GetURL() {
 				if o.urlPort == localURL.Port && localURL.ExposedPort > 0 {
 					if !o.forceFlag {
@@ -254,7 +255,7 @@ func (o *URLCreateOptions) Run() (err error) {
 	}
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		componentName := o.EnvSpecificInfo.GetName()
-		if pushtarget.IsPushTargetDocker() {
+		if o.PushTarget == preference.DockerPushTarget {
 			log.Successf("URL %s created for component: %v with exposed port: %v", o.urlName, componentName, o.exposedPort)
 		} else {
 			curIngressDomain := fmt.Sprintf("%v.%v", o.urlName, o.host)

@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/project"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -478,7 +479,12 @@ func newDevfileContext(command *cobra.Command) *Context {
 
 		internalCxt.EnvSpecificInfo = envInfo
 		resolveNamespace(command, kClient, envInfo)
+
+		internalCxt.PushTarget = preference.KubePushTarget
+	} else {
+		internalCxt.PushTarget = preference.DockerPushTarget
 	}
+
 	// create a context from the internal representation
 	context := &Context{
 		internalCxt: internalCxt,
@@ -510,6 +516,7 @@ type internalCxt struct {
 	LocalConfigInfo *config.LocalConfigInfo
 	KClient         *kclient.Client
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
+	PushTarget      string
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with

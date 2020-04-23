@@ -8,7 +8,7 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
@@ -62,7 +62,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 	defer spinner.End(false)
 
 	var platformContext interface{}
-	if pushtarget.IsPushTargetDocker() {
+	if po.PushTarget == preference.DockerPushTarget {
 		platformContext = nil
 	} else {
 		if len(po.namespace) <= 0 {
