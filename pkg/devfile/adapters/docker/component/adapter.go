@@ -60,6 +60,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 	s.End(true)
 
+	log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
+
 	// Get the supervisord volume
 	supervisordLabels := utils.GetSupervisordVolumeLabels()
 	supervisordVolumes, err := a.Client.GetVolumesByLabel(supervisordLabels)

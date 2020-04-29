@@ -30,8 +30,6 @@ var LocalhostIP = "127.0.0.1"
 func (a Adapter) createComponent() (err error) {
 	componentName := a.ComponentName
 
-	log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
-
 	// Get or create the project source volume
 	var projectVolumeName string
 	projectVolumeLabels := utils.GetProjectVolumeLabels(componentName)
