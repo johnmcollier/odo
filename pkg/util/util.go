@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/rand"
 	"fmt"
 	"io"
@@ -26,6 +27,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/containerd/remotes/docker"
+	"github.com/deislabs/oras/pkg/content"
+	"github.com/deislabs/oras/pkg/oras"
 	"github.com/fatih/color"
 	"github.com/gobwas/glob"
 	"github.com/gregjones/httpcache"
@@ -1026,6 +1030,26 @@ func DownloadFileInMemory(params HTTPRequestParams) ([]byte, error) {
 	}
 
 	return data, nil
+}
+
+func DownloadFromOCI(folder string, devfileArtifact string) ([]byte, error) {
+	ctx := context.Background()
+	resolver := docker.NewResolver(docker.ResolverOptions{PlainHTTP: true})
+
+	// Pull file(s) from registry and save to disk
+	fileStore := content.NewFileStore(folder)
+	defer fileStore.Close()
+	desc, _, err := oras.Pull(ctx, resolver, devfileArtifact, fileStore, oras.WithAllowedMediaTypes(nil))
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("Pulled from %s with digest %s\n", devfileArtifact, desc.Digest)
+
+	devfileData, err := ioutil.ReadFile(filepath.Join(folder, "devfile.yaml"))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to read devfile")
+	}
+	return devfileData, nil
 }
 
 // DownloadFileInMemory uses the url to download the file and return bytes

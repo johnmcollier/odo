@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -35,7 +36,6 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
-	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -1028,12 +1028,10 @@ func (co *CreateOptions) devfileRun() (err error) {
 	// Use existing devfile directly from --devfile flag
 	if co.devfileMetadata.devfilePath.value != "" {
 		if co.devfileMetadata.devfilePath.protocol == "http(s)" {
-			// User specify devfile path is http(s) URL
-			params := util.HTTPRequestParams{
-				URL:   co.devfileMetadata.devfilePath.value,
-				Token: co.devfileMetadata.token,
-			}
-			devfileData, err = util.DownloadFileInMemory(params)
+			fmt.Println(co.devfileMetadata.devfilePath.value)
+			return errors.New("TEST")
+
+			devfileData, err = util.DownloadFromOCI(co.componentContext, "registry.johncollier.ca")
 			if err != nil {
 				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 			}
@@ -1052,26 +1050,16 @@ func (co *CreateOptions) devfileRun() (err error) {
 				return errors.Wrapf(err, "failed to read devfile from %s", DevfilePath)
 			}
 		} else {
-			// Download devfile from registry
-			params := util.HTTPRequestParams{
-				URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
-			}
+			fmt.Println(co.devfileMetadata.devfileRegistry.URL)
+			//url := co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink
+			u, _ := url.Parse(co.devfileMetadata.devfileRegistry.URL)
+			trimmedURL := strings.Trim(u.Host, "http://")
+			devfile := trimmedURL + "/" + co.devfileMetadata.devfileLink
+			//return errors.New("TEST")
 
-			if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
-				token, err := keyring.Get(fmt.Sprintf("%s%s", util.CredentialPrefix, co.devfileMetadata.devfileRegistry.Name), registryUtil.RegistryUser)
-				if err != nil {
-					return errors.Wrap(err, "unable to get secure registry credential from keyring")
-				}
-				params.Token = token
-			}
-
-			cfg, err := preference.New()
+			devfileData, err = util.DownloadFromOCI(co.componentContext, devfile)
 			if err != nil {
-				return err
-			}
-			devfileData, err = util.DownloadFileInMemoryWithCache(params, cfg.GetRegistryCacheTime())
-			if err != nil {
-				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
+				return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 			}
 		}
 	}
